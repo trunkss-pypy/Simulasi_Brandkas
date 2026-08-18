@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Brankas 3D Kombinasi</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        :root {
+            --gold: #ffd700; --gold2: #b8860b; --gold3: #8c6d00;
+            --silver: #d0d0d0; --silver2: #888; --steel: #5a5a5a; --steel-dark: #2b2b2b;
+            --bg: #1a1a1a; --panel: rgba(0,0,0,0.85);
+            --ok: #0f0; --warn: #fc3; --err: #f33; --txt: #eee;
+            --rim-light: linear-gradient(135deg, #777 0%, #444 50%, #222 100%);
+            --metal-gold: linear-gradient(145deg, #ffed4a, #d4a017, #8c6d00, #d4a017);
+            --metal-silver: linear-gradient(145deg, #f0f0f0, #b0b0b0, #666, #b0b0b0);
+            --metal-steel: linear-gradient(145deg, #6a6a6a, #444, #222, #444);
+        }
+        body {
+            background: radial-gradient(ellipse at top, #3a3a3a, #111);
+            min-height: 100vh; color: var(--txt); padding: 10px;
+        }
+        h1 { text-align: center; color: var(--gold); text-shadow: 0 0 12px var(--gold), 0 2px 4px rgba(0,0,0,0.8); margin-bottom: 8px; font-size: 18px; letter-spacing: 1px; }
+
+        .tabs { display: flex; gap: 3px; flex-wrap: wrap; justify-content: center; margin-bottom: 8px; }
+        .tab {
+            padding: 6px 10px; background: linear-gradient(180deg, #444, #2a2a2a);
+            border: 1px solid #555; color: #ccc;
+            border-radius: 6px 6px 0 0; cursor: pointer; font-size: 12px; border-bottom: 2px solid transparent;
+            box-shadow: 0 -2px 4px rgba(0,0,0,0.4) inset;
+        }
+        .tab.active {
+            background: linear-gradient(180deg, #555, #333);
+            color: var(--gold); border-bottom: 2px solid var(--gold);
+            box-shadow: 0 0 8px rgba(255,215,0,0.3);
+        }
+        .tab:hover { border-color: var(--gold2); }
+
+        .panel {
+            display: none; background: linear-gradient(180deg, #2a2a2a, #1c1c1c);
+            padding: 12px; border-radius: 10px; margin-bottom: 10px;
+            border: 1px solid #444; box-shadow: 0 4px 12px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.05);
+        }
+        .panel.active { display: block; }
+        h3 { color: var(--gold); margin: 4px 0 8px; font-size: 14px; text-shadow: 0 1px 2px rgba(0,0,0,0.8); }
+
+        /* KONTROL */
+        .ctrl-row { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-bottom: 10px; }
+        .grp {
+            background: linear-gradient(180deg, #383838, #222);
+            padding: 6px 8px; border-radius: 6px; font-size: 12px;
+            border: 1px solid #444; box-shadow: 0 2px 4px rgba(0,0,0,0.4) inset;
+        }
+        label { font-size: 12px; color: #ccc; margin-right: 3px; text-shadow: 0 1px 2px rgba(0,0,0,0.6); }
+        input[type=number] {
+            width: 44px; padding: 2px; background: #1a1a1a; color: #fff;
+            border: 1px solid #555; border-radius: 3px; text-align: center; font-size: 12px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.5) inset;
+        }
+        input[type=range] { width: 90px; }
+        select {
+            background: #1a1a1a; color: #fff; border: 1px solid #555;
+            border-radius: 3px; padding: 2px; font-size: 12px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.5) inset;
+        }
+        button {
+            padding: 5px 10px; background: linear-gradient(180deg, #555, #333);
+            color: #fff; border: 1px solid var(--gold2); border-radius: 4px;
+            cursor: pointer; font-size: 12px;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1);
+            text-shadow: 0 1px 2px rgba(0,0,0,0.6);
+        }
+        button:hover {
+            border-color: var(--gold); box-shadow: 0 0 8px rgba(255,215,0,0.4), 0 3px 6px rgba(0,0,0,0.5);
+        }
+        button.sm { padding: 2px 5px; font-size: 11px; }
+        .val-lbl { font-size: 11px; color: #aaa; margin-left: 3px; text-shadow: 0 1px 2px rgba(0,0,0,0.6); }
+
+        /* PINTU BRANKAS 3D */
+        .safe-door {
+            position: relative; max-width: 340px; margin: 0 auto;
+            background: linear-gradient(145deg, #5a5a5a, #3a3a3a);
+            border-radius: 14px;
+            border: 8px solid transparent;
+            border-image: var(--rim-light) 1;
+            padding: 12px; transition: all 0.85s ease;
+            box-shadow:
+                inset 0 0 30px rgba(0,0,0,0.8),
+                inset 0 0 60px rgba(0,0,0,0.5),
+                0 8px 20px rgba(0,0,0,0.7),
+                0 0 4px rgba(0,0,0,0.8);
+            transform-style: preserve-3d;
+            perspective: 800px;
+        }
+        .safe-door::before {
+            content: ''; position: absolute; inset: 4px; border-radius: 10px;
+            background: linear-gradient(145deg, transparent 40%, rgba(255,255,255,0.03) 100%);
+            pointer-events: none;
+        }
+        .safe-door.open {
+            transform: perspective(800px) rotateY(115deg) translateX(-10px);
+            transform-origin: left center;
+            background: radial-gradient(circle at left, #222, #0a0a0a);
+            box-shadow:
+                inset 0 0 30px rgba(0,0,0,0.9),
+                20px 0 40px rgba(0,0,0,0.6);
+        }
+        .door-inner { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+        .door-open-note {
+            display: none; position: absolute; inset: 0; align-items: center; justify-content: center;
+            color: var(--gold); font-size: 18px; font-weight: bold;
+            text-shadow: 0 0 15px var(--gold), 0 0 30px rgba(255,215,0,0.6), 0 2px 4px rgba(0,0,0,0.8);
+            z-index: 10;
+        }
+        .safe-door.open .door-open-note { display: flex; animation: glow 1s ease-in-out infinite alternate; }
+        @keyframes glow { from{filter:drop-shadow(0 0 5px gold)} to{filter:drop-shadow(0 0 15px gold)} }
+
+        /* DIAL CARD — KOTAK LOGAM 3D */
+        .dial-card {
+            position: relative; width: 142px;
+            background: linear-gradient(145deg, #4a4a4a, #2a2a2a);
+            border-radius: 10px; padding: 8px; border: 3px solid transparent;
+            border-image: var(--rim-light) 1;
+            box-shadow:
+                inset 0 1px 0 rgba(255,255,255,0.08),
+                inset 0 -4px 8px rgba(0,0,0,0.4),
+                0 4px 8px rgba(0,0,0,0.5);
+            transition: all 0.3s ease;
+        }
+        .dial-card.done {
+            border-color: var(--ok);
+            box-shadow:
+                inset 0 1px 0 rgba(255,255,255,0.08),
+                inset 0 -4px 8px rgba(0,0,0,0.4),
+                0 0 12px rgba(0,255,0,0.4),
+                0 0 24px rgba(0,255,0,0.15);
+        }
+        .dial-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+        .dial-name {
+            font-size: 12px; font-weight: bold; color: #ccc;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+        }
+        .dial-check {
+            color: var(--ok); font-weight: bold; opacity: 0; transition: opacity 0.3s ease;
+            text-shadow: 0 0 6px var(--ok);
+        }
+        .dial-card.done .dial-check { opacity: 1; }
+
+        /* PETUNJUK */
+        .guide {
+            font-size: 11px; line-height: 1.4; margin-bottom: 4px;
+            background: linear-gradient(180deg, rgba(0,0,0,0.5), rgba(0,0,0,0.7));
+            padding: 4px 5px; border-radius: 5px;
+            border: 1px solid #333;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.5);
+        }
+        .step-line { display: flex; align-items: center; gap: 4px; transition: all 0.2s; }
+        .step-num { color: #888; font-size: 10px; width: 12px; font-weight: bold; }
+        .dir-l { color: #7cf; font-weight: bold; text-shadow: 0 0 3px rgba(124,207,255,0.4); }
+        .dir-r { color: #fc8; font-weight: bold; text-shadow: 0 0 3px rgba(255,204,136,0.4); }
+        .t-num {
+            font-weight: bold; color: var(--gold); min-width: 24px; display: inline-block;
+            text-shadow: 0 0 4px rgba(255,215,0,0.5);
+        }
+        .hint { font-size: 10px; margin-left: 2px; font-style: italic; }
+        .hint.zero { color: var(--warn); text-shadow: 0 0 3px rgba(255,204,0,0.3); }
+        .hint.direct { color: #4f8; text-shadow: 0 0 3px rgba(68,255,136,0.3); }
+        .step-line.active { color: var(--ok); font-weight: bold; }
+        .step-line.active .t-num { text-shadow: 0 0 8px var(--ok); }
+        .step-line.done { color: #666; text-decoration: line-through; opacity: 0.6; }
+
+        /* RODA DIAL — BENTUK KUBAT LOGAM */
+        .dial-outer { position: relative; width: 106px; height: 106px; margin: 0 auto; }
+        .needle {
+            position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+            width: 0; height: 0; border-left: 9px solid transparent;
+            border-right: 9px solid transparent; border-top: 16px solid #e55;
+            z-index: 10;
+            filter: drop-shadow(0 0 4px red) drop-shadow(0 2px 2px rgba(0,0,0,0.8));
+        }
+        .needle::after {
+            content: ''; position: absolute; top: -14px; left: -5px;
+            width: 10px; height: 10px; background: radial-gradient(circle, #fff, #c00);
+            border-radius: 50%; box-shadow: 0 0 6px red;
+        }
+        .dial-wrapper { position: absolute; width: 106px; height: 106px; touch-action: none; }
+        .dial-ring {
+            width: 106px; height: 106px; border-radius: 50%;
+            background: var(--metal-steel);
+            box-shadow:
+                inset 0 0 0 5px #555,
+                inset 0 0 0 7px #333,
+                inset 0 0 20px rgba(0,0,0,0.9),
+                0 0 0 2px #222,
+                0 6px 12px rgba(0,0,0,0.6),
+                inset 10px -10px 20px rgba(255,255,255,0.05),
+                inset -10px 10px 20px rgba(0,0,0,0.4);
+            cursor: grab; user-select: none; transition: transform 0.08s ease-out;
+            position: relative;
+        }
+        .dial-ring::before {
+            content: ''; position: absolute; inset: 7px; border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.08), transparent 50%);
+            pointer-events: none;
+        }
+        .dial-ring:active {
+            cursor: grabbing; box-shadow:
+                inset 0 0 0 5px #555,
+                inset 0 0 0 7px #333,
+                inset 0 0 20px rgba(0,0,0,0.9),
+                0 0 0 2px #222,
+                0 2px 4px rgba(0,0,0,0.6),
+                inset 10px -10px 20px rgba(255,255,255,0.05),
+                inset -10px 10px 20px rgba(0,0,0,0.4);
+        }
+        .marks { position: absolute; width: 100%; height: 100%; border-radius: 50%; }
+        .mark { position: absolute; transform-origin: center; left: 50%; top: 5px; }
+        .mark-line {
+            background: linear-gradient(180deg, #ddd, #888);
+            height: 7px; border-radius: 1px; transform-origin: center top;
+            box-shadow: 0 0 1px rgba(0,0,0,0.5);
+        }
+        .mark-text {
+            position: absolute; color: var(--gold); font-size: 8px; font-weight: bold;
+            text-shadow: 0 0 3px rgba(255,215,0,0.4), 0 1px 2px rgba(0,0,0,0.8);
+            user-select: none;
+        }
+        .val-display {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            font-size: 18px; font-weight: bold; color: var(--gold);
+            text-shadow: 0 0 8px rgba(255,215,0,0.6), 0 2px 4px rgba(0,0,0,0.8);
+            background: radial-gradient(circle, #1a1a1a, #000);
+            width: 40px; height: 40px; line-height: 40px; text-align: center;
+            border-radius: 50%; border: 3px solid #444;
+            box-shadow:
+                inset 0 0 10px rgba(0,0,0,0.9),
+                0 0 4px rgba(0,0,0,0.5),
+                inset 0 0 0 2px #222;
+            pointer-events: none;
+        }
+        .dial-status {
+            font-size: 10px; margin-top: 4px; text-align: center; min-height: 20px;
+            color: #aaa; text-shadow: 0 1px 2px rgba(0,0,0,0.6);
+        }
+        .dial-card.done .dial-status { color: var(--ok); font-weight: bold; text-shadow: 0 0 6px var(--ok); }
+
+        /* RIWAYAT & TUTORIAL */
+        .hist-box {
+            max-height: 100px; overflow-y: auto;
+            background: linear-gradient(180deg, rgba(0,0,0,0.6), rgba(0,0,0,0.8));
+            padding: 6px; border-radius: 5px; font-size: 11px; line-height: 1.4;
+            border: 1px solid #333; box-shadow: inset 0 2px 4px rgba(0,0,0,0.5);
+        }
+        .hist-entry { margin: 1px 0; }
+        .hist-L { color: #6cf; }
+        .hist-R { color: #f96; }
+        .tutor { font-size: 12px; line-height: 1.6; }
+        .tutor code {
+            background: linear-gradient(180deg, #333, #222);
+            padding: 1px 6px; border-radius: 4px; color: var(--warn);
+            border: 1px solid #444; box-shadow: inset 0 1px 2px rgba(0,0,0,0.5);
+        }
+        hr { border: none; border-top: 1px solid #333; margin: 8px 0; box-shadow: 0 1px 0 rgba(0,0,0,0.5); }
+    </style>
+</head>
+<body>
+
+<h1>🔐 Brankas Kombinasi 3D</h1>
+
+<div class="tabs">
+    <button class="tab active" onclick="showTab('play')">Buka</button>
+    <button class="tab" onclick="showTab('settings')">Kode</button>
+    <button class="tab" onclick="showTab('history')">Riwayat</button>
+    <button class="tab" onclick="showTab('tutor')">Aturan</button>
+</div>
+
+<div id="panel-play" class="panel active">
+    <div class="ctrl-row">
+        <div class="grp">
+            <label>Jumlah:</label>
+            <select id="dialCount" onchange="applyDialCount()">
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+            </select>
+        </div>
+        <div class="grp">
+            <button id="soundBtn" onclick="toggleSound()">🔊</button>
+            <button onclick="resetAll()">🔄 Semua</button>
+            <button onclick="randomAll()">🎲 Acak</button>
+        </div>
+    </div>
+    <div class="safe-door" id="safeDoor">
+        <div class="door-inner" id="doorInner"></div>
+        <div class="door-open-note">✅ TERBUKA!</div>
+    </div>
+</div>
+
+<div id="panel-settings" class="panel">
+    <h3>⚙ Kode & Sensitivitas</h3>
+    <div class="ctrl-row">
+        <div class="grp">
+            <label>Sens:</label>
+            <input type="range" id="sens" min="10" max="50" value="25" oninput="document.getElementById('sensV').textContent=(this.value/10).toFixed(1)">
+            <span class="val-lbl" id="sensV">2.5</span>
+        </div>
+    </div>
+    <div id="codeInputs"></div>
+    <div class="ctrl-row"><button onclick="saveCodes()">✅ Simpan Kode</button></div>
+</div>
+
+<div id="panel-history" class="panel">
+    <h3>📜 Riwayat Putaran</h3>
+    <div class="hist-box" id="histBox">Belum ada aktivitas...</div>
+    <div class="ctrl-row"><button onclick="clearHistory()">🗑 Hapus</button></div>
+</div>
+
+<div id="panel-tutor" class="panel">
+    <h3>📖 Aturan Lewati Angka 0</h3>
+    <div class="tutor">
+        <p><b>Langkah 1→2 (KANAN):</b><br>
+        ✅ TIDAK lewati 0 jika <code>T2 &lt; T1</code> (tujuan lebih kecil)<br>
+        ⚠️ WAJIB lewati 0 jika <code>T2 &gt; T1</code> (tujuan lebih besar)</p>
+        <p><b>Langkah 2→3 (KIRI):</b><br>
+        ✅ TIDAK lewati 0 jika <code>T3 &gt; T2</code> (tujuan lebih besar)<br>
+        ⚠️ WAJIB lewati 0 jika <code>T3 &lt; T2</code> (tujuan lebih kecil)</p>
+        <hr>
+        <p><b>Contoh:</b><br>
+        ✅ <code>62→4→49</code>: T2(4)&lt;62 &amp; T3(49)&gt;4 → TIDAK lewati 0<br>
+        ⚠️ <code>12→78→35</code>: T2(78)&gt;12 &amp; T3(35)&lt;78 → WAJIB lewati 0</p>
+    </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════
+// LOGIKA TIDAK DIUBAH — SAMA DENGAN VERSI SEBELUMNYA
+// ═══════════════════════════════════════════
+const STEP = 3.6;
+let SENSITIVITY = 2.5;
+let SOUND_ON = true;
+let DIAL_COUNT = 1;
+let HISTORY = [];
+
+function newDialData(id, t1=35, t2=79, t3=25){
+    return {
+        id, t1, t2, t3,
+        phase:0, val:0, zeroPassed:false, unlocked:false,
+        lastDir:0, accumulatedAngle:0, lastClickVal:-1,
+        needZero2:false, needZero3:false
+    };
+}
+let DIALS = [newDialData(0)];
+
+// SUARA
+const AC = new (window.AudioContext || window.webkitAudioContext)();
+function playClick(){
+    if(!SOUND_ON)return;
+    let o=AC.createOscillator(),g=AC.createGain();o.connect(g);g.connect(AC.destination);
+    o.type='sine';o.frequency.setValueAtTime(1200,AC.currentTime);o.frequency.exponentialRampToValueAtTime(500,AC.currentTime+0.06);
+    g.gain.setValueAtTime(0.25,AC.currentTime);g.gain.exponentialRampToValueAtTime(0.001,AC.currentTime+0.06);
+    o.start(AC.currentTime);o.stop(AC.currentTime+0.06);
+}
+function playLock(){
+    if(!SOUND_ON)return;
+    [880,1100].forEach((f,i)=>setTimeout(()=>{
+        let o=AC.createOscillator(),g=AC.createGain();o.connect(g);g.connect(AC.destination);
+        o.type='sine';o.frequency.value=f;g.gain.setValueAtTime(0.3,AC.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.001,AC.currentTime+0.12);
+        o.start(AC.currentTime);o.stop(AC.currentTime+0.12);
+    },i*100));
+}
+function playOpen(){
+    if(!SOUND_ON)return;
+    [523,659,784,1047].forEach((f,i)=>setTimeout(()=>{
+        let o=AC.createOscillator(),g=AC.createGain();o.connect(g);g.connect(AC.destination);
+        o.type='sine';o.frequency.value=f;g.gain.setValueAtTime(0.3,AC.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.001,AC.currentTime+0.25);
+        o.start(AC.currentTime);o.stop(AC.currentTime+0.25);
+    },i*180));
+}
+
+// RIWAYAT
+function addHistory(dialId, dir, val, phase){
+    let dirS = dir===-1?'⬅KIRI':'➡KANAN';
+    let phS = ['Mulai','1','2','3','Buka'][phase]||'?';
+    HISTORY.unshift({dialId,dirS,val,phase:phS,t:new Date().toLocaleTimeString()});
+    if(HISTORY.length>60) HISTORY.pop();
+    renderHistory();
+}
+function renderHistory(){
+    const box=document.getElementById('histBox');
+    if(!HISTORY.length){ box.innerHTML='Belum ada aktivitas...'; return; }
+    box.innerHTML=HISTORY.map(h=>`<div class="hist-entry">Dial${h.dialId+1}: ${h.dirS} ${h.val} — Langkah${h.phase} @${h.t}</div>`).join('');
+}
+function clearHistory(){ HISTORY=[]; renderHistory(); }
+
+// TAB
+function showTab(id){
+    document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+    document.getElementById(`panel-${id}`).classList.add('active');
+    event.target.classList.add('active');
+}
+
+// LOGIKA LEWATI NOL
+function computeNeedZero(d){
+    d.needZero2 = (d.t2 > d.t1);
+    d.needZero3 = (d.t3 < d.t2);
+}
+function checkZero(oldV,newV,dir){
+    if(dir === -1 && oldV > 90 && newV < 10) return true;
+    if(dir === +1 && oldV < 10 && newV > 90) return true;
+    return false;
+}
+function targetReached(d){
+    switch(d.phase){
+        case 1: return d.val === d.t1;
+        case 2: return d.needZero2 ? (d.zeroPassed && d.val === d.t2) : (d.val === d.t2);
+        case 3: return d.needZero3 ? (d.zeroPassed && d.val === d.t3) : (d.val === d.t3);
+        case 4: return d.val >= 91 || d.val < 1;
+        default: return false;
+    }
+}
+function startPhase(d,p){
+    d.phase=p;
+    if(p===2) computeNeedZero(d);
+    if(p===3){ d.zeroPassed=false; computeNeedZero(d); }
+    if(p===1){ d.zeroPassed=false; computeNeedZero(d); }
+    d.lastDir=0; d.accumulatedAngle=0;
+}
+
+// BANGUN HTML
+function buildDialHTML(d){
+    computeNeedZero(d);
+    let hint2 = d.needZero2 ? '<span class="hint zero">⚠ lewati 0</span>' : '<span class="hint direct">✅ langsung</span>';
+    let hint3 = d.needZero3 ? '<span class="hint zero">⚠ lewati 0</span>' : '<span class="hint direct">✅ langsung</span>';
+return `
+<div class="dial-card" id="card${d.id}">
+    <div class="dial-header">
+        <span class="dial-name">Dial ${d.id+1}</span>
+        <span class="dial-check">✅</span>
+        <button class="sm" onclick="resetDial(${d.id})">🔄</button>
+    </div>
+    <div class="guide">
+        <div class="step-line" id="d${d.id}s1"><span class="step-num">1</span><span class="dir-l">⬅</span><span class="t-num">${d.t1}</span></div>
+        <div class="step-line" id="d${d.id}s2"><span class="step-num">2</span><span class="dir-r">➡</span><span class="t-num">${d.t2}</span>${hint2}</div>
+        <div class="step-line" id="d${d.id}s3"><span class="step-num">3</span><span class="dir-l">⬅</span><span class="t-num">${d.t3}</span>${hint3}</div>
+        <div class="step-line" id="d${d.id}s4"><span class="step-num">4</span><span class="dir-r">➡</span><span class="t-num">91–0</span></div>
+    </div>
+    <div class="dial-outer">
+        <div class="needle"></div>
+        <div class="dial-wrapper" data-dial="${d.id}">
+            <div class="dial-ring" id="ring${d.id}"><div class="marks" id="marks${d.id}"></div></div>
+        </div>
+        <div class="val-display" id="val${d.id}">0</div>
+    </div>
+    <div class="dial-status" id="st${d.id}">Putar KIRI</div>
+</div>`;
+}
+function buildCodeInputHTML(d){
+    return `<div class="grp" style="margin:3px 0;">
+        <b>Dial${d.id+1}</b>:
+        <label>1:</label><input type="number" id="c${d.id}t1" value="${d.t1}" min="0" max="99">
+        <label>2:</label><input type="number" id="c${d.id}t2" value="${d.t2}" min="0" max="99">
+        <label>3:</label><input type="number" id="c${d.id}t3" value="${d.t3}" min="0" max="99">
+    </div>`;
+}
+function buildMarks(id){
+    const c=document.getElementById(`marks${id}`); if(!c)return; c.innerHTML='';
+    for(let i=0;i<100;i++){
+        const d=i*STEP;
+        const m=document.createElement('div'); m.className='mark';
+        m.style.transform=`rotate(${d}deg) translateY(-3px)`;
+        const l=document.createElement('div'); l.className='mark-line';
+        l.style.width=i%5===0?'2px':'1px'; l.style.height=i%5===0?'8px':'5px';
+        l.style.opacity=i%5===0?'1':'0.5';
+        if(i%10===0){
+            const t=document.createElement('div'); t.className='mark-text'; t.textContent=i;
+            const r=d*Math.PI/180;
+            t.style.left=`${50+40*Math.sin(r)-5}px`;
+            t.style.top=`${50-40*Math.cos(r)-3}px`;
+            c.appendChild(t);
+        }
+        m.appendChild(l); c.appendChild(m);
+    }
+}
+
+// SUDUT
+function getAngle(id,e){
+    const r=document.getElementById(`ring${id}`).getBoundingClientRect();
+    const x=e.clientX-(r.left+r.width/2), y=e.clientY-(r.top+r.height/2);
+    let a=Math.atan2(x,-y)*180/Math.PI; return a<0?a+360:a;
+}
+
+// RENDER
+function renderDial(id){
+    const d=DIALS[id];
+    document.getElementById(`val${id}`).textContent=d.val;
+    document.getElementById(`ring${id}`).style.transform=`rotate(${-d.val*STEP}deg)`;
+
+    for(let i=1;i<=4;i++){
+        const el=document.getElementById(`d${id}s${i}`);
+        el.className=d.phase>i?'step-line done':(d.phase===i?'step-line active':'step-line');
+    }
+
+    const card=document.getElementById(`card${id}`);
+    const st=document.getElementById(`st${id}`);
+    if(d.unlocked){
+        card.classList.add('done'); st.textContent='✅ SELESAI';
+    }else{
+        card.classList.remove('done');
+        let needZ = d.phase===2?d.needZero2:(d.phase===3?d.needZero3:null);
+        let zNote = needZ===true ? (d.zeroPassed?' ✅0':' ⚠lewati0') : (needZ===false?' ✅langsung':'');
+        switch(d.phase){
+            case 0: st.textContent='Putar KIRI'; break;
+            case 1: st.textContent=`KIRI→${d.t1} | ${d.val}`; break;
+            case 2: st.textContent=`KANAN→${d.t2} | ${d.val}${zNote}`; break;
+            case 3: st.textContent=`KIRI→${d.t3} | ${d.val}${zNote}`; break;
+            case 4: st.textContent=`KANAN→91–0 | ${d.val}`; break;
+        }
+    }
+    checkAllDone();
+}
+function checkAllDone(){
+    if(DIALS.every(d=>d.unlocked)){
+        document.getElementById('safeDoor').classList.add('open');
+        playOpen();
+    }
+}
+
+// PUTARAN
+let activeDial=-1, ang0=0;
+function onStart(e){
+    e.preventDefault();
+    const id=parseInt(e.currentTarget.getAttribute('data-dial'));
+    if(DIALS[id].unlocked)return;
+    activeDial=id;
+    const t=e.touches?e.touches[0]:e;
+    ang0=getAngle(id,t); DIALS[id].accumulatedAngle=0;
+}
+function onMove(e){
+    if(activeDial===-1)return;
+    const d=DIALS[activeDial]; if(d.unlocked)return;
+    e.preventDefault();
+    const t=e.touches?e.touches[0]:e;
+    let ca=getAngle(activeDial,t);
+    let dA=ca-ang0; if(dA>180)dA-=360; if(dA<-180)dA+=360;
+
+    d.accumulatedAngle -= dA/SENSITIVITY; ang0=ca;
+    let dir = d.accumulatedAngle>STEP/2 ? -1 : (d.accumulatedAngle<-STEP/2 ? +1 : 0);
+    if(dir!==0){
+        let delta=Math.round(d.accumulatedAngle/STEP);
+        d.accumulatedAngle -= delta*STEP;
+        let newV=(d.val+delta+1000)%100; if(newV<0)newV+=100;
+
+        if(d.phase===0 && dir===-1){ startPhase(d,1); }
+        if(d.phase>0){
+            if(checkZero(d.val,newV,dir))d.zeroPassed=true;
+            if(newV!==d.lastClickVal){ d.lastClickVal=newV; playClick(); }
+
+            if(d.lastDir!==0 && dir!==d.lastDir){
+                if(targetReached(d)){
+                    playLock();
+                    if(d.phase===1)startPhase(d,2);
+                    else if(d.phase===2)startPhase(d,3);
+                    else if(d.phase===3)startPhase(d,4);
+                    else if(d.phase===4){ d.unlocked=true; playOpen(); }
+                }else{
+                    startPhase(d,d.phase);
+                }
+            }
+            if(d.val!==newV) addHistory(activeDial,dir,newV,d.phase);
+            d.lastDir=dir; d.val=newV;
+        }
+    }
+    renderDial(activeDial);
+}
+function onEnd(){ activeDial=-1; }
+
+// TOMBOL
+function resetDial(id){
+    const d=DIALS[id];
+    d.phase=0; d.val=0; d.zeroPassed=false; d.lastDir=0; d.accumulatedAngle=0;
+    d.unlocked=false; d.lastClickVal=-1;
+    const r=document.getElementById(`ring${id}`);
+    r.style.transition='transform 0.3s ease-out'; r.style.transform='rotate(0deg)';
+    setTimeout(()=>r.style.transition='',300);
+    document.getElementById('safeDoor').classList.remove('open');
+    renderDial(id);
+}
+function resetAll(){ DIALS.forEach((_,i)=>resetDial(i)); }
+function toggleSound(){ SOUND_ON=!SOUND_ON; document.getElementById('soundBtn').textContent=SOUND_ON?'🔊':'🔇'; }
+function randomAll(){
+    DIALS.forEach(d=>{
+        d.t1=Math.floor(Math.random()*100);
+        d.t2=Math.floor(Math.random()*100);
+        d.t3=Math.floor(Math.random()*100);
+    });
+    syncCodesToUI(); alert('✅ Kode diacak! Tekan Simpan Kode.');
+}
+function syncCodesToUI(){
+    DIALS.forEach(d=>{
+        const t1=document.getElementById(`c${d.id}t1`), t2=document.getElementById(`c${d.id}t2`), t3=document.getElementById(`c${d.id}t3`);
+        if(t1)t1.value=d.t1; if(t2)t2.value=d.t2; if(t3)t3.value=d.t3;
+    });
+    rebuildAll();
+}
+function saveCodes(){
+    DIALS.forEach(d=>{
+        d.t1=parseInt(document.getElementById(`c${d.id}t1`).value)%100||0;
+        d.t2=parseInt(document.getElementById(`c${d.id}t2`).value)%100||0;
+        d.t3=parseInt(document.getElementById(`c${d.id}t3`).value)%100||0;
+    });
+    SENSITIVITY=parseFloat(document.getElementById('sens').value)/10;
+    resetAll(); alert('✅ Disimpan!');
+}
+function applyDialCount(){
+    DIAL_COUNT=parseInt(document.getElementById('dialCount').value);
+    while(DIALS.length<DIAL_COUNT) DIALS.push(newDialData(DIALS.length));
+    while(DIALS.length>DIAL_COUNT) DIALS.pop();
+    rebuildAll();
+}
+function rebuildAll(){
+    document.getElementById('doorInner').innerHTML=DIALS.map(d=>buildDialHTML(d)).join('');
+    document.getElementById('codeInputs').innerHTML=DIALS.map(d=>buildCodeInputHTML(d)).join('');
+    DIALS.forEach((_,i)=>buildMarks(i));
+    document.querySelectorAll('.dial-wrapper').forEach(w=>{
+        w.addEventListener('mousedown',onStart);
+        w.addEventListener('touchstart',onStart,{passive:false});
+    });
+    document.addEventListener('mousemove',onMove);
+    document.addEventListener('touchmove',onMove,{passive:false});
+    document.addEventListener('mouseup',onEnd);
+    document.addEventListener('touchend',onEnd);
+    document.getElementById('safeDoor').classList.remove('open');
+}
+
+window.onload=rebuildAll;
+</script>
+</body>
+</html>
